@@ -1,5 +1,6 @@
-package com.example.demo;
+package com.example.demo.reservation;
 
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -31,30 +32,37 @@ public class ReservationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Reservation>> getAllReservation(){
+    public ResponseEntity<List<Reservation>> getAllReservation(
+            @RequestParam(value = "roomId", required = false) Long roomId,
+            @RequestParam(name = "userId", required = false) Long userId,
+            @RequestParam(name = "pageSize", required = false) Integer pageSize,
+            @RequestParam(name = "pageNumber", required = false) Integer pageNumber
+    ){
         logger.info("All reservations called");
-        return ResponseEntity.ok(reservationService.findAllReservations());
+        var filter = new ReservationSearchFilter(
+                roomId,
+                userId,
+                pageSize,
+                pageNumber
+        );
+        return ResponseEntity.ok(reservationService.findAllByFilter(filter));
         //return reservationService.findAllReservations();
     }
 
     @PostMapping
-    public ResponseEntity<Reservation> createReservation(@RequestBody Reservation reservationToCreate) throws IllegalAccessException {
-        logger.info("Post caleed");
-        try{
+    public ResponseEntity<Reservation> createReservation(@RequestBody @Valid Reservation reservationToCreate) throws IllegalAccessException {
+        logger.info("Post called");
+
             return ResponseEntity.status(201)
                     .body(reservationService.createReservation(reservationToCreate));
-
-        }catch (Exception e){
-            return ResponseEntity.status(404).build();
-        }
        // return reservationService.createReservation(reservationToCreate);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Reservation> updateReservation(
             @PathVariable("id") Long id,
-            @RequestBody Reservation reservationToupdate
-            ) throws NoSuchFieldException {
+            @RequestBody @Valid Reservation reservationToupdate
+            ) throws NoSuchFieldException, IllegalArgumentException, IllegalStateException, IllegalAccessException {
         logger.info("Update called " + id);
         var updated = reservationService.updateReservation(id, reservationToupdate);
         return ResponseEntity.ok(updated);
@@ -63,18 +71,14 @@ public class ReservationController {
     @DeleteMapping("/{id}/cancel")
     public ResponseEntity<Void> deleteReservation(@PathVariable("id") Long id) throws NoSuchFieldException {
         logger.info("delete called " + id);
-        try{
             reservationService.cancelReservation(id);
             return ResponseEntity.ok().build();
-        }catch (NoSuchFieldException e){
-            return ResponseEntity.status(404).build();
-        }
     }
 
     @PostMapping("/{id}/approve")
     public ResponseEntity<Reservation> approveReservation(
             @PathVariable("id") Long id
-    ) throws NoSuchFieldException {
+    ) throws NoSuchFieldException, IllegalAccessException {
         logger.info("Approve called " + id);
         var reservation = reservationService.approveReservation(id);
         return ResponseEntity.ok(reservation);
